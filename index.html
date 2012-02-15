@@ -3,19 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <title>מדד השילוב</title>
-    <script src="http://maps.google.com/maps?file=api&v=2" type="text/javascript"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+    <script src="http://maps.google.com/maps?file=api&v=3" type="text/javascript"></script>
     <script src="totals.js" type="text/javascript"></script>
     <script src="differential.js" type="text/javascript"></script>
     <script src="lib/mapiconmaker_packed.js" type="text/javascript"></script>
     <script type="text/javascript">
 
+    var hex = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
     var pupils = {total: 0, locals: {}, maxRate: 0 };
     var values = [];
     
     // get an icon based on a single hex digit - x
-    function getIcon(x) {
-        var hex = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
-        var color = (x==8)?"#0000FF":"#"+hex[15-x]+"0"+hex[x]+"000";
+    function getIcon(color) {
 
         return MapIconMaker.createMarkerIcon({width: 20, height: 34, 
                     primaryColor: color});
@@ -53,6 +53,8 @@
             var rate = value*100/pupils.maxRate|0;
             var grade = values.indexOf(rate)*15/values.length|0;
 
+            function getFooter() { return "עשירון : "+(grade*10/15|0+1)+" יחס : "+ value; };
+
             geocoder.getLatLng(
               name,
               function(point) {
@@ -60,13 +62,18 @@
                   // alert(name + " not found");
                   ;
                 } else {
-                  var marker = new GMarker(point, {icon: getIcon(grade)});
+                  var color = (grade==8)?"#0000FF":"#"+hex[15-grade]+"0"+hex[grade]+"000";
+                  var marker = new GMarker(point, {icon: getIcon(color)});
                   map.addOverlay(marker);
                   GEvent.addListener(marker, "hover", function() {
                     marker.openInfoWindow(document.createTextNode(name+": "+rate));
                   });
-                  GEvent.addListener(marker, "click", function() {
-                    marker.openInfoWindow(document.createTextNode(name+": "+rate));
+                  GEvent.addListener(marker, "mouseover", function() {
+                    
+                    $('#last-header').html(name);
+                    $('#last-color').css({backgroundColor: color});
+                    $('#last-deci').html(grade*10/15+1|0);
+                    $('#last-rate').html(value);
                   });
                 }
             });
@@ -74,7 +81,7 @@
         };
         if (GBrowserIsCompatible()) {
             map.addControl(new GLargeMapControl());
-            map.setCenter(new GLatLng(33.0, 32.7419), 7);
+            map.setCenter(new GLatLng(31.768, 35.213), 7);
      
             // Add 10 markers to the map at random locations
             var bounds = map.getBounds();
@@ -93,9 +100,33 @@
     };
 
     </script>
+    <style>
+        #main>div { width: 45%; height: 600px; margin-right:4%; text-align:center; float: right;}
+        #last-color { background: solid gray; width: 100%; height: 300px;}
+        th, td {text-align: right;padding-right: 2em;}
+    </style>
   </head>
-  <body onload="initialize()" onunload="GUnload()">
-    <div id="map_canvas" style="width: 600px; height: 500px"></div>
+  <body onload="initialize()" onunload="GUnload()" dir="rtl">
+    <div id="main"style="margin: 0 auto; width:80%">
+        <div id="map_canvas"></div>
+        <div id="history">
+            <div style="width:100%">
+                <h1 id="last-header">להזיז את העכבר בבקשה</h1>
+                <div id="last-color">&nbsp;</div>
+                <table>
+                    <tr>
+                     <th>עשירון</th>
+                     <td id="last-deci"></td>
+                    </tr>
+                    <tr>
+                     <th>יחס בין הזכאים למקבלים</th>
+                     <td id="last-rate"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+            
+    </div>
   </body>
 </html>
 
