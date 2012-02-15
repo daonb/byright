@@ -10,13 +10,15 @@
     <script type="text/javascript">
 
     var pupils = {total: 0, locals: {}, maxRate: 0 };
+    var values = [];
     
+    // get an icon based on a single hex digit - x
     function getIcon(x) {
         var hex = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
-        var grade = x*15/100;
+        var color = (x==8)?"#0000FF":"#"+hex[15-x]+"0"+hex[x]+"000";
 
         return MapIconMaker.createMarkerIcon({width: 20, height: 34, 
-                    primaryColor: "#"+hex[15-grade]+"0"+hex[grade]+"000"});
+                    primaryColor: color});
     };
 
     function initialize() {
@@ -34,7 +36,8 @@
                 for (var j=0; j < diffs.length; j++) {
                     // look for i's locality
                     if (i.locality == diffs[j].locality ) {
-                        var rate = diffs[j].pupils * 100 / i.pupils;
+                        var rate = diffs[j].pupils*100/i.pupils|0;
+                        values.push(rate);
                         pupils.locals[i.locality] = rate;
                         if (rate > maxRate)
                             maxRate = rate;
@@ -43,9 +46,13 @@
                 }
             };
             pupils.maxRate = maxRate;
+            values.sort(function(x,y) { return (x-y); })
         };
 
-        function showLocality(name, desc) {
+        function showLocality(name, value) {
+            var rate = value*100/pupils.maxRate|0;
+            var grade = values.indexOf(rate)*15/values.length|0;
+
             geocoder.getLatLng(
               name,
               function(point) {
@@ -53,16 +60,17 @@
                   // alert(name + " not found");
                   ;
                 } else {
-                  var marker = new GMarker(point, {icon: getIcon(value*100/pupils.maxRate)});
+                  var marker = new GMarker(point, {icon: getIcon(grade)});
                   map.addOverlay(marker);
                   GEvent.addListener(marker, "hover", function() {
-                    marker.openInfoWindow(document.createTextNode(name+": "+desc));
+                    marker.openInfoWindow(document.createTextNode(name+": "+rate));
                   });
                   GEvent.addListener(marker, "click", function() {
-                    marker.openInfoWindow(document.createTextNode(name+": "+desc));
+                    marker.openInfoWindow(document.createTextNode(name+": "+rate));
                   });
                 }
             });
+            return {rate: rate, grade: grade};
         };
         if (GBrowserIsCompatible()) {
             map.addControl(new GLargeMapControl());
@@ -79,7 +87,7 @@
             calcRates();
             for (name in pupils.locals) {
                 var value = pupils.locals[name];
-                showLocality(name, value);
+                pupils.locals[name].x = showLocality(name, value);
             }
         }
     };
