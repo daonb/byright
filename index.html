@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="he">
+  <head>
+    <meta charset="utf-8" />
+    <title>מדד השילוב</title>
+    <script src="http://maps.google.com/maps?file=api&v=2" type="text/javascript"></script>
+    <script src="totals.js" type="text/javascript"></script>
+    <script src="differential.js" type="text/javascript"></script>
+    <script src="lib/mapiconmaker_packed.js" type="text/javascript"></script>
+    <script type="text/javascript">
+
+    var pupils = {total: 0, locals: {}, maxRate: 0 };
+    
+    function getIcon(x) {
+        var hex = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
+        var grade = x*15/100;
+
+        return MapIconMaker.createMarkerIcon({width: 20, height: 34, 
+                    primaryColor: "#"+hex[15-grade]+"0"+hex[grade]+"000"});
+    };
+
+    function initialize() {
+
+        var map = new GMap2(document.getElementById("map_canvas"));
+
+        function calcRates()  {
+            var maxRate = 0;
+            for (var count = 0; count < totals.length; count++) {
+                var ind = 0;
+                var i = totals[count];
+
+                pupils.total += i.pupils;
+                // TODO: refactor to use a hash keyed on name and a timeout
+                for (var j=0; j < diffs.length; j++) {
+                    // look for i's locality
+                    if (i.locality == diffs[j].locality ) {
+                        var rate = diffs[j].pupils * 100 / i.pupils;
+                        pupils.locals[i.locality] = rate;
+                        if (rate > maxRate)
+                            maxRate = rate;
+                        break;
+                    }
+                }
+            };
+            pupils.maxRate = maxRate;
+        };
+
+        function showLocality(name, desc) {
+            geocoder.getLatLng(
+              name,
+              function(point) {
+                if (!point) {
+                  // alert(name + " not found");
+                  ;
+                } else {
+                  var marker = new GMarker(point, {icon: getIcon(value*100/pupils.maxRate)});
+                  map.addOverlay(marker);
+                  GEvent.addListener(marker, "hover", function() {
+                    marker.openInfoWindow(document.createTextNode(name+": "+desc));
+                  });
+                  GEvent.addListener(marker, "click", function() {
+                    marker.openInfoWindow(document.createTextNode(name+": "+desc));
+                  });
+                }
+            });
+        };
+        if (GBrowserIsCompatible()) {
+            map.addControl(new GLargeMapControl());
+            map.setCenter(new GLatLng(33.0, 32.7419), 7);
+     
+            // Add 10 markers to the map at random locations
+            var bounds = map.getBounds();
+            var southWest = bounds.getSouthWest();
+            var northEast = bounds.getNorthEast();
+            var lngSpan = northEast.lng() - southWest.lng();
+            var latSpan = northEast.lat() - southWest.lat();
+            
+            geocoder = new GClientGeocoder();
+            calcRates();
+            for (name in pupils.locals) {
+                var value = pupils.locals[name];
+                showLocality(name, value);
+            }
+        }
+    };
+
+    </script>
+  </head>
+  <body onload="initialize()" onunload="GUnload()">
+    <div id="map_canvas" style="width: 600px; height: 500px"></div>
+  </body>
+</html>
+
+
