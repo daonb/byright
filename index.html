@@ -38,7 +38,7 @@
                     if (i.locality == diffs[j].locality ) {
                         var rate = diffs[j].pupils*100/i.pupils|0;
                         values.push(rate);
-                        pupils.locals[i.locality] = rate;
+                        pupils.locals[i.locality] = {num: i.pupils, rate:rate};
                         if (rate > maxRate)
                             maxRate = rate;
                         break;
@@ -65,15 +65,13 @@
                   var color = (grade==8)?"#0000FF":"#"+hex[15-grade]+"0"+hex[grade]+"000";
                   var marker = new GMarker(point, {icon: getIcon(color)});
                   map.addOverlay(marker);
-                  GEvent.addListener(marker, "hover", function() {
-                    marker.openInfoWindow(document.createTextNode(name+": "+rate));
-                  });
                   GEvent.addListener(marker, "mouseover", function() {
                     
                     $('#last-header').html(name);
                     $('#last-color').css({backgroundColor: color});
                     $('#last-deci').html(grade*10/15+1|0);
                     $('#last-rate').html(value);
+                    $('#last-pupils').html(pupils.locals[name].num);
                   });
                 }
             });
@@ -93,8 +91,8 @@
             geocoder = new GClientGeocoder();
             calcRates();
             for (name in pupils.locals) {
-                var value = pupils.locals[name];
-                pupils.locals[name].x = showLocality(name, value);
+                var rate = pupils.locals[name].rate;
+                pupils.locals[name].x = showLocality(name, rate);
             }
         }
     };
@@ -117,11 +115,15 @@
                 <div id="last-color">&nbsp;</div>
                 <table>
                     <tr>
+                     <th>מספר הזכאים</th>
+                     <td id="last-pupils"></td>
+                    </tr>
+                    <tr>
                      <th>עשירון</th>
                      <td id="last-deci"></td>
                     </tr>
                     <tr>
-                     <th>יחס בין הזכאים למקבלים</th>
+                     <th>יחס בין המקבלים לזכאים ב %</th>
                      <td id="last-rate"></td>
                     </tr>
                 </table>
